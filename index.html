@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>编辑器</title>
+    <link
+      href="https://unpkg.com/normalize.min.css@8.0.1/normalize.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://unpkg.com/@wangeditor/editor@5.1.14/dist/css/style.css"
+      rel="stylesheet"
+    />
+    <!-- 引入样式 -->
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/element-ui@2.15.8/lib/theme-chalk/index.css"
+    />
+    <style>
+      html,
+      body {
+        background-color: #fff;
+        height: 100%;
+        overflow: hidden;
+        color: #333;
+      }
+
+      [v-cloak] {
+        display: none;
+      }
+
+      #app {
+        height: 100%;
+      }
+
+      .el-row {
+        height: 100%;
+      }
+
+      .el-col {
+        height: 100%;
+      }
+
+      .el-scrollbar__wrap {
+        overflow-x: hidden;
+      }
+
+      .el-scrollbar__view {
+        height: 100%;
+      }
+
+      #top-container {
+        border-bottom: 1px solid #e8e8e8;
+        padding: 0.75rem;
+        display: flex;
+        justify-content: space-between;
+      }
+
+      #editor-toolbar {
+        background-color: #fcfcfc;
+        margin: 0 auto;
+      }
+
+      .w-e-toolbar {
+        justify-content: center;
+      }
+
+      #content {
+        height: calc(100% - 13rem);
+        background-color: rgb(245, 245, 245);
+        overflow-y: auto;
+        position: relative;
+      }
+
+      #editor-container {
+        margin: auto;
+        background-color: #fff;
+        padding: 1.25rem;
+        border: 1px solid #e8e8e8;
+        box-shadow: 0 2px 10px rgb(0 0 0 / 12%);
+        min-height: calc(100% - 2.6rem);
+      }
+
+      #title-container {
+        padding: 0.8rem 0;
+        border-bottom: 1px solid #e8e8e8;
+      }
+
+      #title-container input {
+        font-size: 1.6rem;
+        border: 0;
+        outline: none;
+        width: 100%;
+        line-height: 1;
+      }
+
+      #editor-text-area {
+        min-height: 25rem;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="app" v-cloak>
+      <div id="top-container">
+        <div>
+          <el-date-picker
+            v-model="time"
+            type="date"
+            size="mini"
+            value-format="yyyyMMdd"
+            style="width: 10rem"
+            @change="getData"
+          >
+          </el-date-picker>
+        </div>
+        <div>
+          <el-button v-if="isEdit" size="mini" @click="isEdit= false"
+            >取消</el-button
+          >
+          <el-button v-if="isEdit" type="primary" size="mini" @click="save"
+            >保存</el-button
+          >
+          <el-button v-else type="primary" size="mini" @click="edit"
+            >编辑</el-button
+          >
+        </div>
+      </div>
+      <div v-show="isEdit" style="border-bottom: 1px solid #e8e8e8">
+        <div id="editor-toolbar"></div>
+      </div>
+      <el-row>
+        <el-col
+          :xs="24"
+          :md="{span: 20, offset: 2}"
+          :lg="{span: 16, offset: 4}"
+          :xl="{span: 8, offset: 8}"
+        >
+          <el-scrollbar id="content">
+            <div id="editor-container">
+              <div id="title-container">
+                <input
+                  v-model="data.title"
+                  :readonly="!isEdit"
+                  placeholder="标题"
+                />
+              </div>
+              <div id="editor-text-area"></div>
+            </div>
+          </el-scrollbar>
+        </el-col>
+      </el-row>
+      <el-dialog title="提示" :visible.sync="dialogVisible" width="90%">
+        <el-form ref="form" :model="form" label-width="50px">
+          <el-form-item label="key">
+            <el-input v-model="form.key" show-password></el-input>
+          </el-form-item>
+          <el-form-item label="iv">
+            <el-input v-model="form.iv" show-password></el-input>
+          </el-form-item>
+        </el-form>
+        <span slot="footer" class="dialog-footer">
+          <el-button @click="dialogVisible = false">取 消</el-button>
+          <el-button type="primary" @click="confirm">确 定</el-button>
+        </span>
+      </el-dialog>
+    </div>
+    <script src="https://unpkg.com/vue@2.6.14/dist/vue.min.js"></script>
+    <script src="https://unpkg.com/axios@0.27.2/dist/axios.min.js"></script>
+    <!-- 引入组件库 -->
+    <script src="https://unpkg.com/element-ui@2.15.8/lib/index.js"></script>
+
+    <script src="https://unpkg.com/@wangeditor/editor@5.1.14/dist/index.js"></script>
+    <script src="https://unpkg.com/md5@2.3.0/dist/md5.min.js"></script>
+    <script type="module">
+      import {
+        encrypt,
+        decrypt
+      } from 'https://yxjqnc.github.io/notes/js/sm4/index.js'
+      const parseTime = (time, cFormat) => {
+        if (!time) {
+          return null
+        }
+        const format = cFormat || '{y}-{m}-{d} {h}:{i}:{s}'
+        let date
+        if (typeof time === 'object') {
+          date = time
+        } else {
+          if (typeof time === 'string') {
+            if (/^[0-9]+$/.test(time)) {
+              time = parseInt(time)
+            } else {
+              time = time.replace(new RegExp(/-/gm), '/')
+            }
+          }
+
+          if (typeof time === 'number' && time.toString().length === 10) {
+            time = time * 1000
+          }
+          date = new Date(time)
+        }
+        const formatObj = {
+          y: date.getFullYear(),
+          m: date.getMonth() + 1,
+          d: date.getDate(),
+          h: date.getHours(),
+          i: date.getMinutes(),
+          s: date.getSeconds(),
+          a: date.getDay()
+        }
+        const time_str = format.replace(/{([ymdhisa])+}/g, (result, key) => {
+          const value = formatObj[key]
+          // Note: getDay() returns 0 on Sunday
+          if (key === 'a') {
+            return ['日', '一', '二', '三', '四', '五', '六'][value]
+          }
+          return value.toString().padStart(2, '0')
+        })
+        return time_str
+      }
+      new Vue({
+        el: '#app',
+        data() {
+          return {
+            data: {
+              title: '',
+              content: ''
+            },
+            time: parseTime(new Date(), '{y}{m}{d}'),
+            isEdit: false,
+            editor: null,
+            form: {
+              key: sessionStorage.getItem('key'),
+              iv: sessionStorage.getItem('iv')
+            },
+            dialogVisible: false
+          }
+        },
+        async mounted() {
+          this.initEditor()
+          if (!(this.form.key && this.form.iv)) {
+            this.dialogVisible = true
+          } else {
+            await this.getData()
+          }
+        },
+        methods: {
+          initEditor() {
+            const _this = this
+
+            const E = window.wangEditor
+
+            // 切换语言
+            const LANG = location.href.indexOf('lang=en') > 0 ? 'en' : 'zh-CN'
+            E.i18nChangeLanguage(LANG)
+
+            window.editorConfig = {
+              placeholder: 'Type here...',
+              scroll: false, // 禁止编辑器滚动
+              MENU_CONF: {
+                uploadImage: {
+                  fieldName: 'your-fileName',
+                  base64LimitSize: 10 * 1024 * 1024 // 10M 以下插入 base64
+                }
+              },
+              readOnly: true,
+              onChange(editor) {
+                _this.data.content = editor.getHtml()
+              }
+            }
+
+            // 先创建 editor
+            window.editor = E.createEditor({
+              selector: '#editor-text-area',
+              content: [],
+              html: this.data.content,
+              config: editorConfig
+            })
+
+            // 创建 toolbar
+            const toolbar = E.createToolbar({
+              editor,
+              selector: '#editor-toolbar',
+              config: {
+                excludeKeys: 'fullScreen'
+              }
+            })
+
+            // 点击空白处 focus 编辑器
+            document
+              .getElementById('editor-text-area')
+              .addEventListener('click', (e) => {
+                console.log(e)
+                if (e.target.id === 'editor-text-area') {
+                  editor.blur()
+                  editor.focus(true) // focus 到末尾
+                }
+              })
+          },
+          async getData() {
+            const _this = this
+            if (!_this.time) return
+            await axios
+              .get(
+                `./data/${_this.time.substr(0, 4)}/${_this.time.substr(4, 2)}/${
+                  _this.time
+                }.json`
+              )
+              .then((res) => {
+                if (res.status === 200) {
+                  _this.data = JSON.parse(
+                    decrypt(res.data, this.form.key, {
+                      mode: 'cbc',
+                      iv: this.form.iv
+                    })
+                  )
+                }
+              })
+              .catch(async (err) => {
+                if (err.message.includes('Invalid code point')) {
+                  this.$message.error('密钥错误')
+                } else if (err.response && err.response.status === 404) {
+                  await axios
+                    .get(
+                      `https://yxjqnc.github.io/notes/data/${_this.time.substr(
+                        0,
+                        4
+                      )}/${_this.time.substr(4, 2)}/${_this.time}.json`
+                    )
+                    .then((res) => {
+                      if (res.status === 200) {
+                        _this.data = JSON.parse(
+                          decrypt(res.data, this.form.key, {
+                            mode: 'cbc',
+                            iv: this.form.iv
+                          })
+                        )
+                      }
+                    })
+                    .catch((e) => {
+                      if (e.response.status === 404) {
+                        _this.data = {
+                          title: '',
+                          content: ''
+                        }
+                      }
+                    })
+                }
+              })
+            window.editor.setHtml(_this.data.content)
+          },
+          async confirm() {
+            sessionStorage.setItem('key', MD5(MD5(MD5(MD5(this.form.key)))))
+            sessionStorage.setItem('iv', MD5(MD5(MD5(MD5(this.form.iv)))))
+            if (this.isEdit) {
+              this.save()
+            } else {
+              await this.getData()
+            }
+            this.dialogVisible = false
+          },
+          edit() {
+            this.isEdit = true
+            window.editor.enable()
+          },
+          save() {
+            if (!(this.form.key && this.form.iv)) {
+              this.dialogVisible = true
+              return
+            }
+            const fileName = `${
+              this.time || parseTime(new Date(), '{y}{m}{d}')
+            }.json`
+            const data = {
+              title: this.data.title,
+              content: this.data.content,
+              createTime: this.data.createTime || parseTime(new Date()),
+              updateTime: parseTime(new Date())
+            }
+            this.downloadJsonOrTxt(
+              fileName,
+              encrypt(JSON.stringify(data), this.form.key, {
+                mode: 'cbc',
+                iv: this.form.iv
+              })
+            )
+            this.isEdit = false
+            window.editor.disable()
+          },
+          downloadJsonOrTxt(filename, text) {
+            var pom = document.createElement('a')
+            pom.setAttribute(
+              'href',
+              'data:text/plain;charset=utf-8,' + encodeURIComponent(text)
+            )
+            pom.setAttribute('download', filename)
+            if (document.createEvent) {
+              var event = document.createEvent('MouseEvents')
+              event.initEvent('click', true, true)
+              pom.dispatchEvent(event)
+            } else {
+              pom.click()
+            }
+          }
+        }
+      })
+    </script>
+  </body>
+</html>
