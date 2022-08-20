@@ -324,7 +324,7 @@
                 } else if (err.response && err.response.status === 404) {
                   await axios
                     .get(
-                      `https://yxjqnc.github.io/notes/data/${_this.time.substr(
+                      `https://yxjqnc.github.io/note/data/${_this.time.substr(
                         0,
                         4
                       )}/${_this.time.substr(4, 2)}/${_this.time}.json`
@@ -354,6 +354,8 @@
           async confirm() {
             sessionStorage.setItem('key', MD5(MD5(MD5(MD5(this.form.key)))))
             sessionStorage.setItem('iv', MD5(MD5(MD5(MD5(this.form.iv)))))
+            this.form.key = MD5(MD5(MD5(MD5(this.form.key))))
+            this.form.iv = MD5(MD5(MD5(MD5(this.form.iv))))
             if (this.isEdit) {
               this.save()
             } else {
@@ -379,6 +381,7 @@
               createTime: this.data.createTime || parseTime(new Date()),
               updateTime: parseTime(new Date())
             }
+            console.log(this.form)
             this.downloadJsonOrTxt(
               fileName,
               encrypt(JSON.stringify(data), this.form.key, {
