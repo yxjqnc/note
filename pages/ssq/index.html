@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>编辑器</title>
+    <link
+      href="https://unpkg.com/normalize.min.css@8.0.1/normalize.min.css"
+      rel="stylesheet"
+    />
+    <!-- 引入样式 -->
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/element-ui@2.15.8/lib/theme-chalk/index.css"
+    />
+    <style>
+      html,
+      body {
+        background-color: #fff;
+        height: 100%;
+        overflow: hidden;
+        color: #333;
+      }
+
+      [v-cloak] {
+        display: none;
+      }
+
+      #app {
+        height: 100%;
+        padding: 10px;
+      }
+
+      .el-pagination {
+        text-align: center;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="app" v-cloak>
+      <div v-loading="loading">
+        <el-form :inline="true" :model="searchForm">
+          <!-- <el-form-item label="期数">
+            <el-input
+              v-model="searchForm.qs"
+              size="mini"
+              placeholder="期数"
+            ></el-input>
+          </el-form-item>
+
+          <el-form-item label="红球">
+            <el-input
+              v-model="searchForm.r"
+              size="mini"
+              placeholder="红球"
+            ></el-input>
+          </el-form-item>
+
+          <el-form-item label="蓝球">
+            <el-input
+              v-model="searchForm.b"
+              size="mini"
+              placeholder="蓝球"
+            ></el-input>
+          </el-form-item>
+          <el-form-item>
+            <el-button type="primary" size="mini" @click="search"
+              >查询</el-button
+            >
+          </el-form-item> -->
+          <el-form-item>
+            <el-button type="primary" size="mini" @click="save">保存</el-button>
+          </el-form-item>
+          <el-form-item style="float: right">
+            <el-button type="primary" size="mini" @click="dialogVisible = true"
+              >新增</el-button
+            >
+          </el-form-item>
+        </el-form>
+
+        <el-table :data="tableData" height="calc(100vh - 116px)">
+          <el-table-column fixed prop="qs" label="期数"> </el-table-column>
+          <el-table-column prop="r1" label="红球1"> </el-table-column>
+          <el-table-column prop="r2" label="红球2"> </el-table-column>
+          <el-table-column prop="r3" label="红球3"> </el-table-column>
+          <el-table-column prop="r4" label="红球4"> </el-table-column>
+          <el-table-column prop="r5" label="红球5"> </el-table-column>
+          <el-table-column prop="r6" label="红球6"> </el-table-column>
+          <el-table-column prop="b" label="蓝球"> </el-table-column>
+        </el-table>
+        <el-pagination
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
+          :current-page="pageConfig.page"
+          :page-sizes="[20, 50, 100]"
+          :page-size="pageConfig.size"
+          layout="total, sizes, prev, pager, next, jumper"
+          :total="total"
+        >
+        </el-pagination>
+      </div>
+      <el-dialog
+        title="新增"
+        :visible.sync="dialogVisible"
+        top="10vw"
+        width="90%"
+      >
+        <el-form ref="form" :model="form" :rules="rules" label-width="60px">
+          <el-form-item prop="qs" label="期数">
+            <el-input v-model="form.qs"></el-input>
+          </el-form-item>
+          <el-form-item prop="r1" label="红球1">
+            <el-input v-model="form.r1"></el-input>
+          </el-form-item>
+          <el-form-item prop="r2" label="红球2">
+            <el-input v-model="form.r2"></el-input>
+          </el-form-item>
+          <el-form-item prop="r3" label="红球3">
+            <el-input v-model="form.r3"></el-input>
+          </el-form-item>
+          <el-form-item prop="r4" label="红球4">
+            <el-input v-model="form.r4"></el-input>
+          </el-form-item>
+          <el-form-item prop="r5" label="红球5">
+            <el-input v-model="form.r5"></el-input>
+          </el-form-item>
+          <el-form-item prop="r6" label="红球6">
+            <el-input v-model="form.r6"></el-input>
+          </el-form-item>
+          <el-form-item prop="b" label="蓝球">
+            <el-input v-model="form.b"></el-input>
+          </el-form-item>
+        </el-form>
+        <span slot="footer" class="dialog-footer">
+          <el-button @click="dialogVisible = false">取 消</el-button>
+          <el-button type="primary" @click="confirm">确 定</el-button>
+        </span>
+      </el-dialog>
+    </div>
+    <script src="https://unpkg.com/vue@2.6.14/dist/vue.min.js"></script>
+    <script src="https://unpkg.com/axios@0.27.2/dist/axios.min.js"></script>
+    <!-- 引入组件库 -->
+    <script src="https://unpkg.com/element-ui@2.15.8/lib/index.js"></script>
+
+    <script>
+      new Vue({
+        el: '#app',
+        data() {
+          return {
+            loading: false,
+            searchForm: {},
+            tableData: [],
+            pageConfig: {
+              page: 1,
+              size: 20
+            },
+            total: 0,
+            data: [],
+            form: {
+              qs: '',
+              r1: '',
+              r2: '',
+              r3: '',
+              r4: '',
+              r5: '',
+              r6: '',
+              b: ''
+            },
+            rules: {
+              qs: [{ required: true, message: '请输入期数', trigger: 'blur' }],
+              r1: [{ required: true, message: '请输入红球1', trigger: 'blur' }],
+              r2: [{ required: true, message: '请输入红球2', trigger: 'blur' }],
+              r3: [{ required: true, message: '请输入红球3', trigger: 'blur' }],
+              r4: [{ required: true, message: '请输入红球4', trigger: 'blur' }],
+              r5: [{ required: true, message: '请输入红球5', trigger: 'blur' }],
+              r6: [{ required: true, message: '请输入红球6', trigger: 'blur' }],
+              b: [{ required: true, message: '请输入蓝球', trigger: 'blur' }]
+            },
+            dialogVisible: false
+          }
+        },
+        async mounted() {
+          await this.getData()
+        },
+        methods: {
+          search() {
+            this.tableData = this.data.slice(
+              (this.pageConfig.page - 1) * this.pageConfig.size,
+              this.pageConfig.page * this.pageConfig.size
+            )
+          },
+          handleSizeChange(val) {
+            this.pageConfig.size = val
+            this.search()
+          },
+          handleCurrentChange(val) {
+            this.pageConfig.page = val
+            this.search()
+          },
+          async getData() {
+            this.loading = true
+            await axios
+              .get(`https://yxjqnc.github.io/note/data/ssq/all.json`)
+              .then((res) => {
+                if (res.status === 200) {
+                  this.data = res.data
+                  this.tableData = this.data.slice(
+                    (this.pageConfig.page - 1) * this.pageConfig.size,
+                    this.pageConfig.size
+                  )
+                  this.total = res.data.length
+                }
+              })
+              .catch((e) => {
+                if (e.response.status === 404) {
+                  this.$message.error('数据丢失！')
+                } else {
+                  this.$message.error('获取数据失败！')
+                }
+              })
+              .finally(() => {
+                this.loading = false
+              })
+          },
+          async confirm() {
+            this.$refs.form.validate((valid) => {
+              if (valid) {
+                this.data.unshift(JSON.parse(JSON.stringify(this.form)))
+                this.pageConfig.page = 1
+                this.pageConfig.size = 20
+                this.search()
+                this.dialogVisible = false
+              } else {
+                return false
+              }
+            })
+          },
+          save() {
+            const fileName = `all.json`
+            this.downloadJsonOrTxt(fileName, JSON.stringify(this.data))
+          },
+          downloadJsonOrTxt(filename, text) {
+            var pom = document.createElement('a')
+            pom.setAttribute(
+              'href',
+              'data:text/plain;charset=utf-8,' + encodeURIComponent(text)
+            )
+            pom.setAttribute('download', filename)
+            if (document.createEvent) {
+              var event = document.createEvent('MouseEvents')
+              event.initEvent('click', true, true)
+              pom.dispatchEvent(event)
+            } else {
+              pom.click()
+            }
+          }
+        }
+      })
+    </script>
+  </body>
+</html>
