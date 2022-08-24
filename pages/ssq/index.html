@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>编辑器</title>
+    <title>双色球</title>
     <link
       href="https://unpkg.com/normalize.min.css@8.0.1/normalize.min.css"
       rel="stylesheet"
@@ -34,6 +34,32 @@
 
       .el-pagination {
         text-align: center;
+      }
+
+      .red_boll {
+        text-align: center;
+        display: inline-block;
+        width: 1.8rem;
+        height: 1.8rem;
+        background: red;
+        margin: 0 0.2rem;
+        border-radius: 1rem;
+        color: white;
+        font-weight: bold;
+        line-height: 1.8rem;
+      }
+
+      .blue_boll {
+        text-align: center;
+        display: inline-block;
+        width: 1.8rem;
+        height: 1.8rem;
+        background: dodgerblue;
+        margin: 0 0.2rem;
+        border-radius: 1rem;
+        color: white;
+        font-weight: bold;
+        line-height: 1.8rem;
       }
     </style>
   </head>
@@ -73,8 +99,16 @@
           <el-form-item>
             <el-button type="primary" size="mini" @click="save">保存</el-button>
           </el-form-item>
+          <el-form-item>
+            <el-button type="primary" size="mini" @click="create"
+              >生成</el-button
+            >
+          </el-form-item>
           <el-form-item style="float: right">
-            <el-button type="primary" size="mini" @click="dialogVisible = true"
+            <el-button
+              type="primary"
+              size="mini"
+              @click="() => { dialogVisible = true;isView = false }"
               >新增</el-button
             >
           </el-form-item>
@@ -107,7 +141,22 @@
         top="10vw"
         width="90%"
       >
-        <el-form ref="form" :model="form" :rules="rules" label-width="60px">
+        <div v-if="isView" style="text-align: center">
+          <span class="red_boll">{{createSsq.r1}}</span>
+          <span class="red_boll">{{createSsq.r2}}</span>
+          <span class="red_boll">{{createSsq.r3}}</span>
+          <span class="red_boll">{{createSsq.r4}}</span>
+          <span class="red_boll">{{createSsq.r5}}</span>
+          <span class="red_boll">{{createSsq.r6}}</span>
+          <span class="blue_boll">{{createSsq.b}}</span>
+        </div>
+        <el-form
+          v-else
+          ref="form"
+          :model="form"
+          :rules="rules"
+          label-width="60px"
+        >
           <el-form-item prop="qs" label="期数">
             <el-input v-model="form.qs"></el-input>
           </el-form-item>
@@ -135,7 +184,9 @@
         </el-form>
         <span slot="footer" class="dialog-footer">
           <el-button @click="dialogVisible = false">取 消</el-button>
-          <el-button type="primary" @click="confirm">确 定</el-button>
+          <el-button v-if="!isView" type="primary" @click="confirm"
+            >确 定</el-button
+          >
         </span>
       </el-dialog>
     </div>
@@ -178,7 +229,9 @@
               r6: [{ required: true, message: '请输入红球6', trigger: 'blur' }],
               b: [{ required: true, message: '请输入蓝球', trigger: 'blur' }]
             },
-            dialogVisible: false
+            dialogVisible: false,
+            isView: false,
+            createSsq: {}
           }
         },
         async mounted() {
@@ -237,9 +290,91 @@
               }
             })
           },
+          create() {
+            const data = this.data.slice(0, 16)
+            const rateA = Array.from(
+              new Set(
+                data
+                  .map((item) => {
+                    const { qs, b, ...arrA } = item
+                    return Object.values(arrA)
+                  })
+                  .reduce((pre, cur) => {
+                    return [].concat(pre).concat(cur)
+                  })
+              )
+            )
+              .map((item) => {
+                let result = {}
+                result[item] =
+                  data
+                    .map((ele) => {
+                      const { qs, b, ...arrA } = ele
+                      return Object.values(arrA)
+                    })
+                    .reduce((pre, cur) => {
+                      return [].concat(pre).concat(cur)
+                    })
+                    .filter((ele) => ele === item).length / 96
+                return result
+              })
+              .reduce((pre, cur) => {
+                return Object.assign({}, pre, cur)
+              })
+            const rateB = Array.from(new Set(data.map((item) => item.b)))
+              .map((item) => {
+                let result = {}
+                result[item] = data.filter((ele) => ele.b === item).length / 16
+                return result
+              })
+              .reduce((pre, cur) => {
+                return Object.assign({}, pre, cur)
+              })
+            let temp = []
+            while (temp.length < 6) {
+              const value = this.chanceSelect(rateA, 17721088)
+              if (!temp.includes(value)) {
+                temp.push(value)
+              }
+            }
+            temp.sort((a, b) => a - b)
+
+            this.createSsq = {
+              r1: temp[0],
+              r2: temp[1],
+              r3: temp[2],
+              r4: temp[3],
+              r5: temp[4],
+              r6: temp[5],
+              b: this.chanceSelect(rateB, 17721088)
+            }
+            this.dialogVisible = true
+            this.isView = true
+          },
           save() {
             const fileName = `all.json`
             this.downloadJsonOrTxt(fileName, JSON.stringify(this.data))
+          },
+          chanceSelect(probability, topBound) {
+            if (probability == null || probability.length == 0) return null
+
+            var sum = 0 //sum就是总次数
+            for (var k in probability) {
+              sum += probability[k] * topBound
+            }
+            // 从1开始
+            var rand = parseInt(Math.random() * sum) + 1
+
+            for (var k in probability) {
+              //对应的概率次数值，该值越大则rand<=0的机会越大
+              rand -= probability[k] * topBound
+              // 选中
+              if (rand <= 0) {
+                var item = k
+                return item
+              }
+            }
+            return null
           },
           downloadJsonOrTxt(filename, text) {
             var pom = document.createElement('a')
