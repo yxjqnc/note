@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>双色球</title>
+    <link
+      href="https://unpkg.com/normalize.min.css@8.0.1/normalize.min.css"
+      rel="stylesheet"
+    />
+    <!-- 引入样式 -->
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/element-ui@2.15.8/lib/theme-chalk/index.css"
+    />
+    <style>
+      html,
+      body {
+        background-color: #fff;
+        height: 100%;
+        overflow: hidden;
+        color: #333;
+      }
+
+      [v-cloak] {
+        display: none;
+      }
+
+      #app {
+        height: 100%;
+        padding: 10px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="app" v-cloak>
+      <div v-loading="loading">
+        <el-form :inline="true" style="text-align: right">
+          <el-form-item>
+            <el-button type="primary" size="mini" @click="create"
+              >卜卦</el-button
+            >
+          </el-form-item>
+        </el-form>
+
+        <el-collapse v-model="activeName" accordion>
+          <template v-for="item in zhouyi">
+            <el-collapse-item :title="item['卦名']" :name="item.id">
+              <div>{{ item['卦辞'] }}</div>
+              <div v-if="item['爻辞']['上九']">
+                上九: {{ item['爻辞']['上九'] }}
+              </div>
+              <div v-if="item['爻辞']['上六']">
+                上六: {{ item['爻辞']['上六'] }}
+              </div>
+              <div v-if="item['爻辞']['九三']">
+                九三: {{ item['爻辞']['九三'] }}
+              </div>
+              <div v-if="item['爻辞']['九二']">
+                九二: {{ item['爻辞']['九二'] }}
+              </div>
+              <div v-if="item['爻辞']['九五']">
+                九五: {{ item['爻辞']['九五'] }}
+              </div>
+              <div v-if="item['爻辞']['九四']">
+                九四: {{ item['爻辞']['九四'] }}
+              </div>
+              <div v-if="item['爻辞']['六三']">
+                六三: {{ item['爻辞']['六三'] }}
+              </div>
+              <div v-if="item['爻辞']['六二']">
+                六二: {{ item['爻辞']['六二'] }}
+              </div>
+              <div v-if="item['爻辞']['六五']">
+                六五: {{ item['爻辞']['六五'] }}
+              </div>
+              <div v-if="item['爻辞']['六四']">
+                六四: {{ item['爻辞']['六四'] }}
+              </div>
+              <div v-if="item['爻辞']['初九']">
+                初九: {{ item['爻辞']['初九'] }}
+              </div>
+              <div v-if="item['爻辞']['初六']">
+                初六: {{ item['爻辞']['初六'] }}
+              </div>
+              <div v-if="item['爻辞']['用九']">
+                用九: {{ item['爻辞']['用九'] }}
+              </div>
+              <div v-if="item['爻辞']['用六']">
+                用六: {{ item['爻辞']['用六'] }}
+              </div>
+            </el-collapse-item>
+          </template>
+        </el-collapse>
+      </div>
+      <el-dialog
+        title="卦辞"
+        :visible.sync="dialogVisible"
+        top="10vw"
+        width="90%"
+      >
+        <div style="text-align: center">
+          <template v-for="item in result">
+            <div v-if="item['卦辞']">
+              {{ item['卦名'] }}--卦辞: {{ item['卦辞'] }}
+            </div>
+            <div v-if="item['本卦']">
+              {{ item['卦名'] }}--本卦: {{ item['本卦'] }}
+            </div>
+            <div v-if="item['变卦']">
+              {{ item['卦名'] }}--变卦: {{ item['变卦'] }}
+            </div>
+            <div v-if="item['上九']">
+              {{ item['卦名'] }}--上九: {{ item['上九'] }}
+            </div>
+            <div v-if="item['上六']">
+              {{ item['卦名'] }}--上六: {{ item['上六'] }}
+            </div>
+            <div v-if="item['九三']">
+              {{ item['卦名'] }}--九三: {{ item['九三'] }}
+            </div>
+            <div v-if="item['九二']">
+              {{ item['卦名'] }}--九二: {{ item['九二'] }}
+            </div>
+            <div v-if="item['九五']">
+              {{ item['卦名'] }}--九五: {{ item['九五'] }}
+            </div>
+            <div v-if="item['九四']">
+              {{ item['卦名'] }}--九四: {{ item['九四'] }}
+            </div>
+            <div v-if="item['六三']">
+              {{ item['卦名'] }}--六三: {{ item['六三'] }}
+            </div>
+            <div v-if="item['六二']">
+              {{ item['卦名'] }}--六二: {{ item['六二'] }}
+            </div>
+            <div v-if="item['六五']">
+              {{ item['卦名'] }}--六五: {{ item['六五'] }}
+            </div>
+            <div v-if="item['六四']">
+              {{ item['卦名'] }}--六四: {{ item['六四'] }}
+            </div>
+            <div v-if="item['初九']">
+              {{ item['卦名'] }}--初九: {{ item['初九'] }}
+            </div>
+            <div v-if="item['初六']">
+              {{ item['卦名'] }}--初六: {{ item['初六'] }}
+            </div>
+            <div v-if="item['用九']">
+              {{ item['卦名'] }}--用九: {{ item['用九'] }}
+            </div>
+            <div v-if="item['用六']">
+              {{ item['卦名'] }}--用六: {{ item['用六'] }}
+            </div>
+          </template>
+        </div>
+        <span slot="footer" class="dialog-footer">
+          <el-button @click="dialogVisible = false">取 消</el-button>
+        </span>
+      </el-dialog>
+    </div>
+    <script src="https://unpkg.com/vue@2.6.14/dist/vue.min.js"></script>
+    <script src="https://unpkg.com/axios@0.27.2/dist/axios.min.js"></script>
+    <!-- 引入组件库 -->
+    <script src="https://unpkg.com/element-ui@2.15.8/lib/index.js"></script>
+
+    <script>
+      new Vue({
+        el: '#app',
+        data() {
+          return {
+            loading: false,
+            activeName: 0,
+            zhouyi: [],
+            dialogVisible: false,
+            result: {}
+          }
+        },
+        async mounted() {
+          await this.getData()
+        },
+        methods: {
+          async getData() {
+            this.loading = true
+            await axios
+              .get(`https://yxjqnc.github.io/note/data/zy/zhouyi.json`)
+              .then((res) => {
+                if (res.status === 200) {
+                  this.zhouyi = res.data
+                }
+              })
+              .catch((e) => {
+                if (e.response.status === 404) {
+                  this.$message.error('数据丢失！')
+                } else {
+                  this.$message.error('获取数据失败！')
+                }
+              })
+              .finally(() => {
+                this.loading = false
+              })
+          },
+          create() {
+            this.result = this.gua()
+            this.dialogVisible = true
+          },
+          yao() {
+            let result = [
+              Math.round(Math.random()),
+              Math.round(Math.random()),
+              Math.round(Math.random())
+            ]
+            const a = result.filter((item) => item === 0).length
+            return a === 0
+              ? '老阳'
+              : a === 1
+              ? '少阳'
+              : a === 2
+              ? '少阴'
+              : '老阴'
+          },
+          gua() {
+            let result = []
+            for (let index = 0; index < 6; index++) {
+              const temp = this.yao()
+              result.unshift({
+                index: index + 1,
+                value: temp.endsWith('阳') ? 1 : 0,
+                type: temp.startsWith('老') ? true : false
+              })
+            }
+            const count = result.filter((item) => item.type).length
+            // 本卦
+            const code = result
+              .map((item) => {
+                return item.value
+              })
+              .join('')
+            // 变卦
+            const code1 = result
+              .map((item) => {
+                if (item.type) {
+                  return item.value === 0 ? 1 : 0
+                } else {
+                  return item.value
+                }
+              })
+              .join('')
+            let res = []
+            let temp1 = {}
+            switch (count) {
+              case 0:
+                // 本卦卦辞
+                res.push({
+                  卦辞: this.zhouyi.find((item) => item.code === code)['卦辞'],
+                  卦名: this.zhouyi.find((item) => item.code === code)['卦名']
+                })
+                return res
+              case 1:
+                // 本卦变爻
+                temp1 = {}
+                temp1[this.yaoming(result.find((item) => item.type))] =
+                  this.zhouyi.find((item) => item.code === code)['爻辞'][
+                    this.yaoming(result.find((item) => item.type))
+                  ]
+                temp1['卦名'] = this.zhouyi.find((item) => item.code === code)[
+                  '卦名'
+                ]
+                res.push(temp1)
+                return res
+              case 2:
+                // 本卦两变爻
+                for (let index = 0; index < result.length; index++) {
+                  if (result[index].type) {
+                    temp1 = {}
+                    temp1[this.yaoming(result[index])] = this.zhouyi.find(
+                      (item) => item.code === code
+                    )['爻辞'][this.yaoming(result[index])]
+                    temp1['卦名'] = this.zhouyi.find(
+                      (item) => item.code === code
+                    )['卦名']
+                    res.push(temp1)
+                  }
+                }
+                return res
+              case 3:
+                // 本卦卦辞与变卦卦辞，本卦为主
+                res.push({
+                  本卦: this.zhouyi.find((item) => item.code === code)['卦辞'],
+                  卦名: this.zhouyi.find((item) => item.code === code)['卦名']
+                })
+                res.push({
+                  变卦: this.zhouyi.find((item) => item.code === code1)['卦辞'],
+                  卦名: this.zhouyi.find((item) => item.code === code1)['卦名']
+                })
+                return res
+              case 4:
+                // 变卦两本爻
+                for (let index = 0; index < result.length; index++) {
+                  if (!result[index].type) {
+                    temp1 = {}
+                    temp1[this.yaoming(result[index])] = this.zhouyi.find(
+                      (item) => item.code === code1
+                    )['爻辞'][this.yaoming(result[index])]
+                    temp1['卦名'] = this.zhouyi.find(
+                      (item) => item.code === code1
+                    )['卦名']
+                    res.push(temp1)
+                  }
+                }
+                return res
+              case 5:
+                // 变卦本爻
+                temp1 = {}
+                temp1[this.yaoming(result.find((item) => !item.type))] =
+                  this.zhouyi.find((item) => item.code === code1)['爻辞'][
+                    this.yaoming(result.find((item) => !item.type))
+                  ]
+                temp1['卦名'] = this.zhouyi.find((item) => item.code === code1)[
+                  '卦名'
+                ]
+                res.push(temp1)
+                return res
+              case 6:
+                // 乾卦用九
+                if (code === '111111') {
+                  res.push({
+                    用九: this.zhouyi.find((item) => item.code === code)[
+                      '用九'
+                    ],
+                    卦名: this.zhouyi.find((item) => item.code === code1)[
+                      '卦名'
+                    ]
+                  })
+                  return res
+                }
+                // 坤卦用六
+                if (code === '000000') {
+                  res.push({
+                    用六: this.zhouyi.find((item) => item.code === code)[
+                      '用六'
+                    ],
+                    卦名: this.zhouyi.find((item) => item.code === code1)[
+                      '卦名'
+                    ]
+                  })
+                  return res
+                }
+                // 其他变卦卦辞
+                res.push({
+                  卦辞: this.zhouyi.find((item) => item.code === code)['卦辞'],
+                  卦名: this.zhouyi.find((item) => item.code === code1)['卦名']
+                })
+                return res
+            }
+          },
+          yaoming(item) {
+            const a = { 1: '初', 2: '二', 3: '三', 4: '四', 5: '五', 6: '上' }
+            item.index
+            const b = item.value === 0 ? '六' : '九'
+            return item.index === 1 || item.index === 6
+              ? `${a[item.index]}${b}`
+              : `${b}${a[item.index]}`
+          }
+        }
+      })
+    </script>
+  </body>
+</html>

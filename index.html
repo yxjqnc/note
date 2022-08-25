@@ -292,7 +292,6 @@
             document
               .getElementById('editor-text-area')
               .addEventListener('click', (e) => {
-                console.log(e)
                 if (e.target.id === 'editor-text-area') {
                   editor.blur()
                   editor.focus(true) // focus 到末尾
@@ -381,7 +380,6 @@
               createTime: this.data.createTime || parseTime(new Date()),
               updateTime: parseTime(new Date())
             }
-            console.log(this.form)
             this.downloadJsonOrTxt(
               fileName,
               encrypt(JSON.stringify(data), this.form.key, {
