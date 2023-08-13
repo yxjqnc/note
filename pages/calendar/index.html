@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <div style="margin-top: 10px;"><img id="myImg" src="" width="270" height="600"></div>
+  <canvas id="canvas" width="1080"  height="2400" style="display: none;" >
+    当前浏览器不支持canvas元素，请升级或更换浏览器！
+  </canvas>
+
+  <script>
+    init()
+
+    function init() {
+      const canvas = document.getElementById('canvas'); 
+      const myImg = document.getElementById('myImg')
+      const width = 1080 / 2
+      const height = 2400 / 2
+
+      canvas.width = width
+      canvas.height = height
+      // 获取Canvas  
+      const ctx = canvas.getContext('2d'); // 获取绘制上下文  
+      // 创建渐变
+      const image = new Image()
+      image.src='./bg.jpg'
+      image.onload = ()=>{
+        ctx.drawImage(image, 0, 0, width, height);
+
+        ctx.beginPath() // 开启新路径
+        ctx.fillStyle = "#ffffff80" // 描边样式设置为绿色
+        ctx.roundRect(70 / 2, 1400 / 2, 940 / 2, 570 / 2, 30 / 2);
+        ctx.fill() // 填充一个矩形
+
+        ctx.beginPath() // 开启新路径
+        ctx.fillStyle = "#000" // 描边样式设置为绿色
+        ctx.font = `20px Arial`;
+
+        const date = new Date()
+        const firstDay = new Date(date.getFullYear(), date.getMonth(), 1)
+        const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+        const firstWeek = firstDay.getDay() || 7
+        let currentWeek = firstWeek
+        console.log('firstDay', firstDay);
+        console.log('lastDay', lastDay);
+        const data = []
+        let row = 1
+        
+
+        ctx.fillText('一', 130 / 2, 1500 / 2);
+        ctx.fillText('二', 260 / 2, 1500 / 2);
+        ctx.fillText('三', 390 / 2, 1500 / 2);
+        ctx.fillText('四', 520 / 2, 1500 / 2);
+        ctx.fillText('五', 650 / 2, 1500 / 2);
+        ctx.fillText('六', 780 / 2, 1500 / 2);
+        ctx.fillText('日', 910 / 2, 1500 / 2);
+
+        for (let i = 1; i<= lastDay; i++) {
+          data.push({name: i.toString().padStart(2, '0'), x: 130 / 2 + 130 / 2 * (currentWeek - 1), y: 1500 / 2 + row * 80 / 2})
+          currentWeek = currentWeek + 1
+          if (currentWeek > 7) {
+            currentWeek = 1
+            row = row + 1
+          }
+          
+        }
+        console.log('data', data);
+        for (let day of data) {
+          if (day.name === date.getDate().toString().padStart(2, '0')) {
+            ctx.fillStyle = "#f00"
+          } else {
+            ctx.fillStyle = "#000"
+          }
+          ctx.fillText(day.name, day.x, day.y);
+        }
+
+
+        myImg.style.width = `${width}px`
+        myImg.style.height = `${height}px`
+        myImg.src = canvas.toDataURL('image.png')
+      }
+    }
+  </script>
+</body>
+</html>
